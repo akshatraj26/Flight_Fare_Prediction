@@ -1,0 +1,5 @@
+__pycache__
+.flight
+Flight Fare Predction.ipynb
+templates\home.html
+flight_rf.pkl

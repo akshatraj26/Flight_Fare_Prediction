@@ -1,10 +1,17 @@
+
 body {
-    background-color: #e1f4f3;
+    background-color: #55a7e6;
     text-align: center;
+    color: #f1f9f9;
 }
 
 .navbar {
-    background-color: #333333;
+    background-color: #0b93f4;
+}
+
+.navbar-brand {
+    color: #f1f9f9 !important;
+    text-align: center;
 }
 
 a {
@@ -13,4 +20,18 @@ a {
 
 a:hover {
     color: #f0f0f0;
-  }
+}
+
+.card {
+    background-color: #ffffff20;
+}
+
+.form-control, .btn-primary {
+    background-color: #f1f9f9;
+    color: #0c0b5d;
+}
+
+.btn-primary:hover {
+    background-color: #0c0b5d;
+    color: #f1f9f9;
+}
