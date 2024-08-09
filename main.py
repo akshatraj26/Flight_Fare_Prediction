@@ -1,5 +1,7 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for
 from flask_cors import cross_origin
+from models import db, FlightFare
+from datetime import datetime
 import sklearn
 import pickle
 import pandas as pd
@@ -7,6 +9,19 @@ import pandas as pd
 
 
 app = Flask(__name__)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+# app.app_context().push()
+
+
+# Load the saved model
 model = pickle.load(open("flight_rf.pkl", "rb"))
 
 
@@ -227,28 +242,28 @@ def predict():
 
         # Source
        
-        Source = request.form["Source"]
-        if (Source == 'Delhi'):
+        source = request.form["Source"]
+        if (source == 'Delhi'):
             s_Delhi = 1
             s_Kolkata = 0
             s_Mumbai = 0
             s_Chennai = 0
             
 
-        elif (Source == 'Kolkata'):
+        elif (source == 'Kolkata'):
             s_Delhi = 0
             s_Kolkata = 1
             s_Mumbai = 0
             s_Chennai = 0
             
-        elif (Source == 'Mumbai'):
+        elif (source == 'Mumbai'):
             s_Delhi = 0
             s_Kolkata = 0
             s_Mumbai = 1
             s_Chennai = 0
             
 
-        elif (Source == 'Chennai'):
+        elif (source == 'Chennai'):
             s_Delhi = 0
             s_Kolkata = 0
             s_Mumbai = 0
@@ -269,8 +284,8 @@ def predict():
 
         # Destination
         
-        Destination = request.form["Destination"]
-        if (Destination == 'Cochin'):
+        destination = request.form["Destination"]
+        if (destination == 'Cochin'):
             d_Cochin = 1
             d_Delhi = 0
             d_New_Delhi = 0
@@ -279,7 +294,7 @@ def predict():
             
 
 
-        elif (Destination == 'Delhi'):
+        elif (destination == 'Delhi'):
             d_Cochin = 0
             d_Delhi = 1
             d_New_Delhi = 0
@@ -287,7 +302,7 @@ def predict():
             d_Kolkata = 0
             
 
-        elif (Destination == 'New_Delhi'):
+        elif (destination == 'New_Delhi'):
             d_Cochin = 0
             d_Delhi = 0
             d_New_Delhi = 1
@@ -295,7 +310,7 @@ def predict():
             d_Kolkata = 0
             
 
-        elif (Destination == 'Hyderabad'):
+        elif (destination == 'Hyderabad'):
             d_Cochin = 0
             d_Delhi = 0
             d_New_Delhi = 0
@@ -303,7 +318,7 @@ def predict():
             d_Kolkata = 0
             
 
-        elif (Destination == 'Kolkata'):
+        elif (destination == 'Kolkata'):
             d_Cochin = 0
             d_Delhi = 0
             d_New_Delhi = 0
@@ -371,7 +386,8 @@ def predict():
             d_New_Delhi,
             
         ]
-        print("Size of the independent variable:- ", len(d))
+        # print("Size of the independent variable:- ", len(d))
+        
         prediction = model.predict([[
             Total_stops,
             Journey_day,
@@ -408,11 +424,33 @@ def predict():
         )
 
         output = round(prediction[0], 2)
+        
+        # Saving the data to a database
+        flightfare = FlightFare(
+            departure_date= datetime.strptime(date_dep, "%Y-%m-%dT%H:%M"),
+            arrival_date = datetime.strptime(date_arr, "%Y-%m-%dT%H:%M"),
+            source = source,
+            destination = destination,
+            stoppage=Total_stops,
+            airline = airline,
+            prediction = output)
+        
+        db.session.add(flightfare)
+        try:
+            print(f"Before commit {output}")
+            db.session.commit()
+            
+            return render_template('index.html', prediction_text="Your Flight fare is Rs. {}".format(output))
+        except Exception as e:
+            print(str(e))
+            return redirect(url_for('home'))
 
-        return render_template('index.html', prediction_text="Your Flight price is Rs. {}".format(output))
-
+    print(f"After commit Rs {output}")
+    
     return render_template("index.html")
 
+            
+ 
 
 if __name__ == "__main__":
     app.run(use_reloader=False)

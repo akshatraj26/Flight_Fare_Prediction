@@ -3,3 +3,4 @@ __pycache__
 Flight Fare Predction.ipynb
 templates\home.html
 flight_rf.pkl
+instance
